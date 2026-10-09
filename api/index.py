@@ -2,22 +2,19 @@ import json
 import math
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Response
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["POST", "OPTIONS"],
-    allow_headers=["*"],
-)
 
 DATA_FILE = Path(__file__).resolve().parent.parent / "q-vercel-latency.json"
 
 with open(DATA_FILE, encoding="utf-8") as f:
     DATA = json.load(f)
+
+
+@app.options("/api/latency")
+async def options():
+    return Response(status_code=200)
 
 
 @app.post("/api/latency")
@@ -42,7 +39,6 @@ async def latency(request: Request):
 
         latencies = sorted(float(r["latency_ms"]) for r in records)
         uptimes = [float(r["uptime_pct"]) for r in records]
-
         p95_index = max(0, math.ceil(0.95 * len(latencies)) - 1)
 
         result[region] = {
